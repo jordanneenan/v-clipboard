@@ -146,7 +146,7 @@ class PrefsWindow(Gtk.Window):
         btn_box.pack_start(clear_btn, True, True, 0)
         btn_box.pack_start(save_btn, True, True, 0)
 
-        main_box.pack_start(btn_box, True, True, 0)
+        main_box.pack_start(btn_box, False, False, 0)
 
         self.add(main_box)
         self.show_all()
@@ -328,50 +328,50 @@ def setup_indicator():
     indicator.set_status(AppIndicator.IndicatorStatus.ACTIVE)
     build_menu()
 
-def clipboard_watcher():
-    last_state_hash = None
-    last_img_size = None
-    
-    # Pre-load initial clipboard state so we start empty
+def fetch_clipboard_once():
+    time.sleep(0.15) # Wait for target app to write
     try:
         types_res = subprocess.run(['wl-paste', '--list-types'], stdout=subprocess.PIPE, text=True, timeout=1)
-        types_str = ",".join(sorted(types_res.stdout.splitlines()))
+        types = types_res.stdout.splitlines()
+        
         text_res = subprocess.run(['wl-paste', '--no-newline'], stdout=subprocess.PIPE, text=True, timeout=1)
         fallback_text = text_res.stdout if text_res.returncode == 0 else ""
         
-        import hashlib
-        last_state_hash = hashlib.md5((types_str + fallback_text).encode('utf-8', 'replace')).hexdigest()
-    except:
-        pass
-        
-    while True:
-        try:
-            types_res = subprocess.run(['wl-paste', '--list-types'], stdout=subprocess.PIPE, text=True, timeout=1)
-            types = types_res.stdout.splitlines()
-            types_str = ",".join(sorted(types))
-            
-            text_res = subprocess.run(['wl-paste', '--no-newline'], stdout=subprocess.PIPE, text=True, timeout=1)
-            fallback_text = text_res.stdout if text_res.returncode == 0 else ""
-            
-            import hashlib
-            current_state_hash = hashlib.md5((types_str + fallback_text).encode('utf-8', 'replace')).hexdigest()
-            
-            if current_state_hash != last_state_hash:
-                last_state_hash = current_state_hash
+        is_text = False
+        for t in types:
+            if 'text/plain' in t or 'STRING' in t:
+                is_text = True
+                break
+            if 'image/' in t:
+                break
                 
-                is_text = False
-                for t in types:
-                    if 'text/plain' in t or 'STRING' in t:
-                        is_text = True
-                        break
-                    if 'image/' in t:
-                        break
+        if is_text and fallback_text:
+            item = {"type": "text", "content": fallback_text}
+            if not clipboard_history or clipboard_history[0] != item:
+                clipboard_history[:] = [x for x in clipboard_history if not (x["type"] == "text" and x["content"] == fallback_text)]
+                clipboard_history.insert(0, item)
+                
+                if config["history_limit"] > 0 and len(clipboard_history) > config["history_limit"]:
+                    popped = clipboard_history.pop()
+                    if popped["type"] == "image":
+                        try: os.remove(popped["content"])
+                        except: pass
+                GLib.idle_add(build_menu)
+        else:
+            handled = False
+            if 'image/png' in types or 'image/jpeg' in types:
+                img_res = subprocess.run(['wl-paste', '-t', 'image/png'], stdout=subprocess.PIPE, timeout=2)
+                if len(img_res.stdout) > 0:
+                    img_size = len(img_res.stdout)
+                    final_path = os.path.join(CACHE_DIR, f"{img_size}.png")
+                    with open(final_path, 'wb') as f:
+                        f.write(img_res.stdout)
                         
-                if is_text and fallback_text:
-                    item = {"type": "text", "content": fallback_text}
-                    if not clipboard_history or clipboard_history[0] != item:
-                        clipboard_history[:] = [x for x in clipboard_history if not (x["type"] == "text" and x["content"] == fallback_text)]
+                    item = {"type": "image", "content": final_path}
+                    if not clipboard_history or clipboard_history[0].get("content") != final_path:
+                        clipboard_history[:] = [x for x in clipboard_history if not (x["type"] == "image" and x["content"] == final_path)]
                         clipboard_history.insert(0, item)
+                        handled = True
                         
                         if config["history_limit"] > 0 and len(clipboard_history) > config["history_limit"]:
                             popped = clipboard_history.pop()
@@ -379,48 +379,21 @@ def clipboard_watcher():
                                 try: os.remove(popped["content"])
                                 except: pass
                         GLib.idle_add(build_menu)
-                else:
-                    handled = False
-                    if 'image/png' in types or 'image/jpeg' in types:
-                        img_res = subprocess.run(['wl-paste', '-t', 'image/png'], stdout=subprocess.PIPE, timeout=2)
-                        if len(img_res.stdout) > 0:
-                            img_size = len(img_res.stdout)
-                            if last_img_size is None or abs(img_size - last_img_size) > 50:
-                                last_img_size = img_size
-                                final_path = os.path.join(CACHE_DIR, f"{img_size}.png")
-                                with open(final_path, 'wb') as f:
-                                    f.write(img_res.stdout)
-                                    
-                                item = {"type": "image", "content": final_path}
-                                if not clipboard_history or clipboard_history[0] != item:
-                                    clipboard_history[:] = [x for x in clipboard_history if not (x["type"] == "image" and x["content"] == final_path)]
-                                    clipboard_history.insert(0, item)
-                                    handled = True
-                                    
-                                    if config["history_limit"] > 0 and len(clipboard_history) > config["history_limit"]:
-                                        popped = clipboard_history.pop()
-                                        if popped["type"] == "image":
-                                            try: os.remove(popped["content"])
-                                            except: pass
-                                    GLib.idle_add(build_menu)
-                            else:
-                                handled = True # Image hasn't changed enough to warrant an update
+            
+            if not handled and fallback_text:
+                item = {"type": "text", "content": fallback_text}
+                if not clipboard_history or clipboard_history[0] != item:
+                    clipboard_history[:] = [x for x in clipboard_history if not (x["type"] == "text" and x["content"] == fallback_text)]
+                    clipboard_history.insert(0, item)
                     
-                    if not handled and fallback_text:
-                        item = {"type": "text", "content": fallback_text}
-                        if not clipboard_history or clipboard_history[0] != item:
-                            clipboard_history[:] = [x for x in clipboard_history if not (x["type"] == "text" and x["content"] == fallback_text)]
-                            clipboard_history.insert(0, item)
-                            
-                            if config["history_limit"] > 0 and len(clipboard_history) > config["history_limit"]:
-                                popped = clipboard_history.pop()
-                                if popped["type"] == "image":
-                                    try: os.remove(popped["content"])
-                                    except: pass
-                            GLib.idle_add(build_menu)
-        except Exception as exc:
-            pass
-        time.sleep(0.5)
+                    if config["history_limit"] > 0 and len(clipboard_history) > config["history_limit"]:
+                        popped = clipboard_history.pop()
+                        if popped["type"] == "image":
+                            try: os.remove(popped["content"])
+                            except: pass
+                    GLib.idle_add(build_menu)
+    except Exception:
+        pass
 
 def paste_current():
     if not clipboard_history:
@@ -479,6 +452,9 @@ async def monitor_device(device):
             elif combo == "Super+V" and super_pressed: is_combo_held = True
             
             if event.value in (1, 2):
+                if ctrl_pressed and event.code in (e.KEY_C, e.KEY_X, e.KEY_INSERT):
+                    threading.Thread(target=fetch_clipboard_once, daemon=True).start()
+                    
                 if event.code == e.KEY_ESC and is_active:
                     swallow = True
                     is_active = False
@@ -557,8 +533,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     load_config()
     
-    watcher_thread = threading.Thread(target=clipboard_watcher, daemon=True)
-    watcher_thread.start()
+    # Watcher thread is replaced by event-driven key hooks
     
     listener_thread = threading.Thread(target=key_listener, daemon=True)
     listener_thread.start()
