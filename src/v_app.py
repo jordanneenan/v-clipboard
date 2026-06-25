@@ -374,9 +374,6 @@ def fetch_clipboard_once():
         types_res = subprocess.run(['wl-paste', '--list-types'], stdout=subprocess.PIPE, text=True, timeout=1)
         types = types_res.stdout.splitlines()
         
-        text_res = subprocess.run(['wl-paste', '--no-newline'], stdout=subprocess.PIPE, text=True, timeout=1)
-        fallback_text = text_res.stdout if text_res.returncode == 0 else ""
-        
         is_text = False
         for t in types:
             if 'text/plain' in t or 'STRING' in t:
@@ -384,6 +381,14 @@ def fetch_clipboard_once():
                 break
             if 'image/' in t:
                 break
+        
+        fallback_text = ""
+        if is_text:
+            try:
+                text_res = subprocess.run(['wl-paste', '--no-newline'], stdout=subprocess.PIPE, text=True, timeout=1)
+                fallback_text = text_res.stdout if text_res.returncode == 0 else ""
+            except Exception as e:
+                print(f"Error fetching text: {e}")
                 
         if is_text and fallback_text:
             item = {"type": "text", "content": fallback_text}
