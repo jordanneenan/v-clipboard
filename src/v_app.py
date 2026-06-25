@@ -92,49 +92,14 @@ def get_icon_path():
 # Preferences Dialog
 class PrefsWindow(Gtk.Window):
     def __init__(self):
-        super().__init__()
-        
-        # Aggressive CSS to force slim elements
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(b"""
-            headerbar {
-                min-height: 24px;
-                padding: 0px;
-                margin: 0px;
-            }
-            headerbar button.titlebutton {
-                min-height: 16px;
-                min-width: 16px;
-                padding: 2px 8px;
-                margin: 2px;
-            }
-            button.slim-btn {
-                min-height: 20px;
-                padding: 4px 10px;
-            }
-        """)
-        Gtk.StyleContext.add_provider_for_screen(
-            Gdk.Screen.get_default(), 
-            css_provider, 
-            Gtk.STYLE_PROVIDER_PRIORITY_USER
-        )
-
-        header = Gtk.HeaderBar()
-        header.set_show_close_button(True)
-        header.props.title = "V Preferences"
-        self.set_titlebar(header)
-
+        super().__init__(title="V Preferences")
         self.set_default_size(350, -1)
         self.set_border_width(20)
         self.set_wmclass("v-clipboard-prefs", "v-clipboard-prefs")
 
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=25)
-        main_box.set_margin_top(25)
-        main_box.set_margin_bottom(25)
-        main_box.set_margin_start(25)
-        main_box.set_margin_end(25)
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
 
-        # Shortcut Combo
+        # Shortcut
         hbox1 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         hbox1.pack_start(Gtk.Label(label="Shortcut:"), False, False, 0)
         self.shortcut_combo = Gtk.ComboBoxText()
@@ -167,29 +132,22 @@ class PrefsWindow(Gtk.Window):
         hbox3.pack_end(self.limit_spin, False, False, 0)
         main_box.pack_start(hbox3, False, False, 0)
 
-        # Spacer to absorb ALL extra vertical space
-        spacer = Gtk.Box()
-        main_box.pack_start(spacer, True, True, 0)
-
-        # Buttons Grid
-        btn_grid = Gtk.Grid()
-        btn_grid.set_column_homogeneous(True)
-        btn_grid.set_column_spacing(15)
-        btn_grid.set_margin_top(15)
-        btn_grid.set_valign(Gtk.Align.END)
+        # Native Button Box
+        btn_box = Gtk.ButtonBox(orientation=Gtk.Orientation.HORIZONTAL)
+        btn_box.set_layout(Gtk.ButtonBoxStyle.EXPAND)
+        btn_box.set_spacing(15)
+        btn_box.set_margin_top(10)
 
         clear_btn = Gtk.Button(label="Clear History")
-        clear_btn.get_style_context().add_class("slim-btn")
         clear_btn.connect("clicked", self.on_clear_clicked)
 
         save_btn = Gtk.Button(label="Save & Apply")
-        save_btn.get_style_context().add_class("slim-btn")
         save_btn.connect("clicked", self.on_save_clicked)
 
-        btn_grid.attach(clear_btn, 0, 0, 1, 1)
-        btn_grid.attach(save_btn, 1, 0, 1, 1)
+        btn_box.add(clear_btn)
+        btn_box.add(save_btn)
 
-        main_box.pack_start(btn_grid, False, False, 0)
+        main_box.pack_start(btn_box, False, False, 0)
 
         self.add(main_box)
         self.show_all()
