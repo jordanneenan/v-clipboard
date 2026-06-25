@@ -95,7 +95,6 @@ class PrefsWindow(Gtk.Window):
         super().__init__(title="V Preferences")
         self.set_default_size(350, -1)
         self.set_border_width(20)
-        self.set_position(Gtk.WindowPosition.CENTER)
         self.set_wmclass("v-clipboard-prefs", "v-clipboard-prefs")
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=25)
@@ -135,6 +134,7 @@ class PrefsWindow(Gtk.Window):
 
         # Buttons Box
         btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
+        btn_box.set_homogeneous(True)
         btn_box.set_margin_top(15)
 
         clear_btn = Gtk.Button(label="Clear History")
@@ -143,10 +143,10 @@ class PrefsWindow(Gtk.Window):
         save_btn = Gtk.Button(label="Save & Apply")
         save_btn.connect("clicked", self.on_save_clicked)
 
-        btn_box.pack_end(save_btn, False, False, 0)
-        btn_box.pack_end(clear_btn, False, False, 0)
+        btn_box.pack_start(clear_btn, True, True, 0)
+        btn_box.pack_start(save_btn, True, True, 0)
 
-        main_box.pack_start(btn_box, False, False, 0)
+        main_box.pack_start(btn_box, True, True, 0)
 
         self.add(main_box)
         self.show_all()
