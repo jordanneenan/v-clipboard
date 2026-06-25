@@ -215,30 +215,69 @@ def on_quit(_):
     Gtk.main_quit()
     sys.exit(0)
 
+def build_ui_list():
+    # Clear existing rows
+    for row in ui_listbox.get_children():
+        ui_listbox.remove(row)
+        
+    for item in clipboard_history:
+        row = Gtk.ListBoxRow()
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
+        box.set_margin_top(5)
+        box.set_margin_bottom(5)
+        
+        # Icon
+        icon = Gtk.Image()
+        if item["type"] == "text":
+            icon.set_from_icon_name("text-x-generic", Gtk.IconSize.LARGE_TOOLBAR)
+        else:
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(item["content"], 50, 50, True)
+                icon.set_from_pixbuf(pixbuf)
+            except:
+                icon.set_from_icon_name("image-x-generic", Gtk.IconSize.LARGE_TOOLBAR)
+        
+        box.pack_start(icon, False, False, 0)
+        
+        # Content snippet
+        lbl = Gtk.Label()
+        lbl.set_xalign(0.0)
+        lbl.set_ellipsize(Pango.EllipsizeMode.END)
+        lbl.set_max_width_chars(60)
+        
+        if item["type"] == "text":
+            text = item["content"].replace('\n', ' ')
+            lbl.set_text(text)
+        else:
+            lbl.set_text("[Image]")
+        
+        box.pack_start(lbl, True, True, 0)
+        row.add(box)
+        ui_listbox.add(row)
+    
+    ui_listbox.show_all()
+
+def center_scroll(row):
+    adj = ui_scrolled_window.get_vadjustment()
+    row_alloc = row.get_allocation()
+    page_size = adj.get_page_size()
+    target_value = row_alloc.y - (page_size / 2) + (row_alloc.height / 2)
+    target_value = max(adj.get_lower(), min(target_value, adj.get_upper() - page_size))
+    adj.set_value(target_value)
+    return False
+
 def update_ui():
     if not is_active or not clipboard_history:
         return
-    item_data = clipboard_history[current_index]
-    
-    ui_index_label.set_text(f"[{current_index + 1}/{len(clipboard_history)}]")
-    
-    if item_data["type"] == "text":
-        text = item_data["content"]
-        if len(text) > 400:
-            display_text = text[:397] + "..."
-        else:
-            display_text = text
-        ui_label.set_text(display_text)
-        ui_stack.set_visible_child_name("text")
-    elif item_data["type"] == "image":
-        try:
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(item_data["content"], 700, 400, True)
-            ui_image.set_from_pixbuf(pixbuf)
-        except:
-            ui_image.clear()
-        ui_stack.set_visible_child_name("image")
+        
+    row = ui_listbox.get_row_at_index(current_index)
+    if row:
+        ui_listbox.select_row(row)
+        # Delay centering slightly to ensure layout is calculated if just shown
+        GLib.idle_add(center_scroll, row)
 
 def show_ui():
+    build_ui_list()
     ui_window.show_all()
     update_ui()
 
@@ -252,7 +291,7 @@ def on_draw(widget, cr):
     return False
 
 def setup_ui():
-    global ui_window, ui_label, ui_image, ui_stack, ui_index_label
+    global ui_window, ui_listbox, ui_scrolled_window
     ui_window = Gtk.Window(type=Gtk.WindowType.POPUP)
     ui_window.set_decorated(False)
     ui_window.set_keep_above(True)
@@ -266,20 +305,32 @@ def setup_ui():
     
     ui_window.set_app_paintable(True)
     ui_window.connect("draw", on_draw)
-    ui_window.set_size_request(800, 500)
+    ui_window.set_size_request(600, 450)
     
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
     box.set_name("FlycutBox")
     
     css = b"""
     #FlycutBox {
-        background-color: rgba(0, 0, 0, 0.7);
-        border-radius: 20px;
+        background-color: rgba(0, 0, 0, 0.85);
+        border-radius: 16px;
+    }
+    list {
+        background: transparent;
+    }
+    row {
+        color: white;
+        padding: 5px 15px;
+        background: transparent;
+        border-radius: 8px;
+        margin: 2px 10px;
+    }
+    row:selected {
+        background-color: rgba(255, 255, 255, 0.2);
     }
     label {
         color: white;
-        font-size: 20px;
-        padding: 20px;
+        font-size: 16px;
     }
     """
     style_provider = Gtk.CssProvider()
@@ -291,30 +342,17 @@ def setup_ui():
     )
     
     # Inner layout
-    inner_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+    ui_scrolled_window = Gtk.ScrolledWindow()
+    ui_scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+    ui_scrolled_window.set_margin_top(15)
+    ui_scrolled_window.set_margin_bottom(15)
     
-    ui_index_label = Gtk.Label()
-    ui_index_label.set_xalign(0.0)
-    ui_index_label.set_margin_start(20)
-    ui_index_label.set_margin_top(10)
-    inner_vbox.pack_start(ui_index_label, False, False, 0)
+    ui_listbox = Gtk.ListBox()
+    ui_listbox.set_selection_mode(Gtk.SelectionMode.BROWSE)
+    ui_scrolled_window.add(ui_listbox)
     
-    ui_stack = Gtk.Stack()
+    box.pack_start(ui_scrolled_window, True, True, 0)
     
-    ui_label = Gtk.Label()
-    ui_label.set_line_wrap(True)
-    ui_label.set_max_width_chars(80)
-    ui_label.set_xalign(0.0)
-    ui_label.set_yalign(0.0)
-    ui_stack.add_named(ui_label, "text")
-    
-    ui_image = Gtk.Image()
-    ui_image.set_margin_bottom(20)
-    ui_stack.add_named(ui_image, "image")
-    
-    inner_vbox.pack_start(ui_stack, True, True, 0)
-    
-    box.pack_start(inner_vbox, True, True, 0)
     ui_window.add(box)
 
 def setup_indicator():
