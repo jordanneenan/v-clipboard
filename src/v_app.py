@@ -98,25 +98,25 @@ class PrefsWindow(Gtk.Window):
         css_provider = Gtk.CssProvider()
         css_provider.load_from_data(b"""
             headerbar {
-                min-height: 24px !important;
-                padding: 0px !important;
-                margin: 0px !important;
+                min-height: 24px;
+                padding: 0px;
+                margin: 0px;
             }
             headerbar button.titlebutton {
-                min-height: 16px !important;
-                min-width: 16px !important;
-                padding: 2px 8px !important;
-                margin: 2px !important;
+                min-height: 16px;
+                min-width: 16px;
+                padding: 2px 8px;
+                margin: 2px;
             }
             button.slim-btn {
-                min-height: 20px !important;
-                padding: 4px 10px !important;
+                min-height: 20px;
+                padding: 4px 10px;
             }
         """)
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), 
             css_provider, 
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            Gtk.STYLE_PROVIDER_PRIORITY_USER
         )
 
         header = Gtk.HeaderBar()
