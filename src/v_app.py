@@ -92,7 +92,12 @@ def get_icon_path():
 # Preferences Dialog
 class PrefsWindow(Gtk.Window):
     def __init__(self):
-        super().__init__(title="V Preferences")
+        super().__init__()
+        header = Gtk.HeaderBar()
+        header.set_show_close_button(True)
+        header.props.title = "V Preferences"
+        self.set_titlebar(header)
+
         self.set_default_size(350, -1)
         self.set_border_width(20)
         self.set_wmclass("v-clipboard-prefs", "v-clipboard-prefs")
@@ -104,17 +109,17 @@ class PrefsWindow(Gtk.Window):
         hbox1.pack_start(Gtk.Label(label="Shortcut:"), False, False, 0)
         self.shortcut_combo = Gtk.ComboBoxText()
         self.shortcut_combo.append_text("Ctrl+Shift+V")
-        self.shortcut_combo.append_text("Alt+V")
         self.shortcut_combo.append_text("Super+V")
-        for i, s in enumerate(["Ctrl+Shift+V", "Alt+V", "Super+V"]):
-            if config["shortcut"] == s:
+        self.shortcut_combo.append_text("Alt+V")
+        self.shortcut_combo.set_active(0)
+        for i, text in enumerate(["Ctrl+Shift+V", "Super+V", "Alt+V"]):
+            if text == config["shortcut"]:
                 self.shortcut_combo.set_active(i)
-        
-        self.shortcut_combo.set_valign(Gtk.Align.CENTER)
+                break
         hbox1.pack_end(self.shortcut_combo, False, False, 0)
         main_box.pack_start(hbox1, False, False, 0)
 
-        # Start Index Switch
+        # Start Index
         hbox2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         hbox2.pack_start(Gtk.Label(label="Start on 2nd Item:"), False, False, 0)
         self.start_switch = Gtk.Switch()
@@ -132,10 +137,16 @@ class PrefsWindow(Gtk.Window):
         hbox3.pack_end(self.limit_spin, False, False, 0)
         main_box.pack_start(hbox3, False, False, 0)
 
+        # Spacer to absorb ALL extra vertical space
+        spacer = Gtk.Box()
+        main_box.pack_start(spacer, True, True, 0)
+
+        # Buttons Grid
         btn_grid = Gtk.Grid()
         btn_grid.set_column_homogeneous(True)
         btn_grid.set_column_spacing(15)
         btn_grid.set_margin_top(15)
+        btn_grid.set_valign(Gtk.Align.END)
 
         clear_btn = Gtk.Button(label="Clear History")
         clear_btn.connect("clicked", self.on_clear_clicked)
