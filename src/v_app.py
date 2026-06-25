@@ -399,6 +399,7 @@ def fetch_clipboard_once():
                 GLib.idle_add(build_menu)
                 if is_active:
                     current_index = 0
+                    GLib.idle_add(build_ui_list)
                     GLib.idle_add(update_ui)
         else:
             handled = False
@@ -424,6 +425,7 @@ def fetch_clipboard_once():
                         GLib.idle_add(build_menu)
                         if is_active:
                             current_index = 0
+                            GLib.idle_add(build_ui_list)
                             GLib.idle_add(update_ui)
             
             if not handled and fallback_text:
