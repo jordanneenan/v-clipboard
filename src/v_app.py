@@ -19,7 +19,7 @@ try:
 except ValueError:
     print("Warning: AyatanaAppIndicator3 not found. Tray icon will not be available.")
     AppIndicator = None
-from gi.repository import Gtk, GLib, Gdk, GdkPixbuf
+from gi.repository import Gtk, GLib, Gdk, GdkPixbuf, Pango
 
 # Constants
 CONFIG_DIR = os.path.expanduser("~/.config/v-clipboard")
