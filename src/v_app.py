@@ -92,12 +92,7 @@ def get_icon_path():
 # Preferences Dialog
 class PrefsWindow(Gtk.Window):
     def __init__(self):
-        super().__init__()
-        header = Gtk.HeaderBar()
-        header.set_show_close_button(True)
-        header.props.title = "V Preferences"
-        self.set_titlebar(header)
-
+        super().__init__(title="V Preferences")
         self.set_default_size(350, -1)
         self.set_border_width(20)
         self.set_wmclass("v-clipboard-prefs", "v-clipboard-prefs")
