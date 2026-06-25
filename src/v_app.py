@@ -138,9 +138,11 @@ class PrefsWindow(Gtk.Window):
         btn_box.set_margin_top(15)
 
         clear_btn = Gtk.Button(label="Clear History")
+        clear_btn.set_valign(Gtk.Align.CENTER)
         clear_btn.connect("clicked", self.on_clear_clicked)
 
         save_btn = Gtk.Button(label="Save & Apply")
+        save_btn.set_valign(Gtk.Align.CENTER)
         save_btn.connect("clicked", self.on_save_clicked)
 
         btn_box.pack_start(clear_btn, True, True, 0)
@@ -329,6 +331,7 @@ def setup_indicator():
     build_menu()
 
 def fetch_clipboard_once():
+    global current_index
     time.sleep(0.15) # Wait for target app to write
     try:
         types_res = subprocess.run(['wl-paste', '--list-types'], stdout=subprocess.PIPE, text=True, timeout=1)
@@ -357,6 +360,9 @@ def fetch_clipboard_once():
                         try: os.remove(popped["content"])
                         except: pass
                 GLib.idle_add(build_menu)
+                if is_active:
+                    current_index = 0
+                    GLib.idle_add(update_ui)
         else:
             handled = False
             if 'image/png' in types or 'image/jpeg' in types:
@@ -379,6 +385,9 @@ def fetch_clipboard_once():
                                 try: os.remove(popped["content"])
                                 except: pass
                         GLib.idle_add(build_menu)
+                        if is_active:
+                            current_index = 0
+                            GLib.idle_add(update_ui)
             
             if not handled and fallback_text:
                 item = {"type": "text", "content": fallback_text}
@@ -392,6 +401,9 @@ def fetch_clipboard_once():
                             try: os.remove(popped["content"])
                             except: pass
                     GLib.idle_add(build_menu)
+                    if is_active:
+                        current_index = 0
+                        GLib.idle_add(update_ui)
     except Exception:
         pass
 
@@ -460,7 +472,7 @@ async def monitor_device(device):
                     is_active = False
                     cancel_paste = True
                     GLib.idle_add(hide_ui)
-                elif event.code == e.KEY_V:
+                if event.code == e.KEY_V:
                     if is_combo_held:
                         swallow = True
                         if event.value == 1:
@@ -470,6 +482,8 @@ async def monitor_device(device):
                                 current_index = config["start_index"]
                                 if current_index >= len(clipboard_history): current_index = 0
                                 GLib.idle_add(show_ui)
+                                # Fetch clipboard in background to catch any mouse copies since last check
+                                threading.Thread(target=fetch_clipboard_once, daemon=True).start()
                             else:
                                 current_index = (current_index + 1) % len(clipboard_history) if clipboard_history else 0
                                 GLib.idle_add(update_ui)
