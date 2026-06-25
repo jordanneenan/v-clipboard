@@ -132,29 +132,21 @@ class PrefsWindow(Gtk.Window):
         hbox3.pack_end(self.limit_spin, False, False, 0)
         main_box.pack_start(hbox3, False, False, 0)
 
-        # Buttons Box
-        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
-        btn_box.set_homogeneous(True)
-        btn_box.set_margin_top(15)
+        btn_grid = Gtk.Grid()
+        btn_grid.set_column_homogeneous(True)
+        btn_grid.set_column_spacing(15)
+        btn_grid.set_margin_top(15)
 
         clear_btn = Gtk.Button(label="Clear History")
-        clear_btn.set_valign(Gtk.Align.CENTER)
         clear_btn.connect("clicked", self.on_clear_clicked)
 
         save_btn = Gtk.Button(label="Save & Apply")
-        save_btn.set_valign(Gtk.Align.CENTER)
         save_btn.connect("clicked", self.on_save_clicked)
 
-        # Apply CSS to make buttons explicitly shorter
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(b"button { min-height: 24px; padding-top: 4px; padding-bottom: 4px; }")
-        clear_btn.get_style_context().add_provider(css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
-        save_btn.get_style_context().add_provider(css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+        btn_grid.attach(clear_btn, 0, 0, 1, 1)
+        btn_grid.attach(save_btn, 1, 0, 1, 1)
 
-        btn_box.pack_start(clear_btn, True, True, 0)
-        btn_box.pack_start(save_btn, True, True, 0)
-
-        main_box.pack_start(btn_box, False, False, 0)
+        main_box.pack_start(btn_grid, False, False, 0)
 
         self.add(main_box)
         self.show_all()
