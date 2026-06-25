@@ -145,6 +145,12 @@ class PrefsWindow(Gtk.Window):
         save_btn.set_valign(Gtk.Align.CENTER)
         save_btn.connect("clicked", self.on_save_clicked)
 
+        # Apply CSS to make buttons explicitly shorter
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(b"button { min-height: 24px; padding-top: 4px; padding-bottom: 4px; }")
+        clear_btn.get_style_context().add_provider(css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+        save_btn.get_style_context().add_provider(css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+
         btn_box.pack_start(clear_btn, True, True, 0)
         btn_box.pack_start(save_btn, True, True, 0)
 
