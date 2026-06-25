@@ -92,12 +92,47 @@ def get_icon_path():
 # Preferences Dialog
 class PrefsWindow(Gtk.Window):
     def __init__(self):
-        super().__init__(title="V Preferences")
+        super().__init__()
+        
+        # Aggressive CSS to force slim elements
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(b"""
+            headerbar {
+                min-height: 24px !important;
+                padding: 0px !important;
+                margin: 0px !important;
+            }
+            headerbar button.titlebutton {
+                min-height: 16px !important;
+                min-width: 16px !important;
+                padding: 2px 8px !important;
+                margin: 2px !important;
+            }
+            button.slim-btn {
+                min-height: 20px !important;
+                padding: 4px 10px !important;
+            }
+        """)
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(), 
+            css_provider, 
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        header = Gtk.HeaderBar()
+        header.set_show_close_button(True)
+        header.props.title = "V Preferences"
+        self.set_titlebar(header)
+
         self.set_default_size(350, -1)
         self.set_border_width(20)
         self.set_wmclass("v-clipboard-prefs", "v-clipboard-prefs")
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=25)
+        main_box.set_margin_top(25)
+        main_box.set_margin_bottom(25)
+        main_box.set_margin_start(25)
+        main_box.set_margin_end(25)
 
         # Shortcut Combo
         hbox1 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -144,9 +179,11 @@ class PrefsWindow(Gtk.Window):
         btn_grid.set_valign(Gtk.Align.END)
 
         clear_btn = Gtk.Button(label="Clear History")
+        clear_btn.get_style_context().add_class("slim-btn")
         clear_btn.connect("clicked", self.on_clear_clicked)
 
         save_btn = Gtk.Button(label="Save & Apply")
+        save_btn.get_style_context().add_class("slim-btn")
         save_btn.connect("clicked", self.on_save_clicked)
 
         btn_grid.attach(clear_btn, 0, 0, 1, 1)
